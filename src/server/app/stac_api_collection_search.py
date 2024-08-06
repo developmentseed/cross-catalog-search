@@ -6,7 +6,7 @@ from pystac_client.client import Client
 from pystac_client.exceptions import APIError
 
 from app.collection_search import CollectionSearch
-from app.free_text import apply_regex, parse_query_for_ogc
+from app.free_text import sqlite_text_search
 from app.hint import PYTHON, generate_pystac_client_hint
 from app.models import CollectionMetadata, FederatedSearchError
 from app.shared import BBox, DatetimeInterval
@@ -56,14 +56,6 @@ def datetime_intervals_overlap(
     dtmax = datetime.max.replace(tzinfo=timezone.utc)
 
     return (start2 or dtmin) <= (end1 or dtmax) and (start1 or dtmin) <= (end2 or dtmax)
-
-
-def matches_regex(
-    q: str,
-    text_fields: set[str],
-) -> bool:
-    regex = parse_query_for_ogc(q)
-    return any(apply_regex(regex, text_field) for text_field in text_fields)
 
 
 class STACAPICollectionSearch(CollectionSearch):
@@ -123,18 +115,16 @@ class STACAPICollectionSearch(CollectionSearch):
         )
 
     def textually_overlaps(self, collection: Collection) -> bool:
-        text_fields: set[str] = {
-            text
-            for text in [
-                collection.id,
-                collection.title,
-                collection.description,
-                *(collection.keywords or []),
-            ]
-            if text
+        text_fields: dict[str, str] = {
+            key: text
+            for key, text in collection.to_dict().items()
+            if text and key in ["title", "description", "keywords"]
         }
 
-        return not self.q or matches_regex(self.q, text_fields)
+        if text_fields.get("keywords"):
+            text_fields["keywords"] = ", ".join(text_fields["keywords"])
+
+        return not self.q or sqlite_text_search(self.q, text_fields)
 
     def collection_metadata(self, collection: Collection) -> CollectionMetadata:
         hint = (
