@@ -18,7 +18,7 @@ import ApiDocModal from "./ApiDocModal"; // Import the new modal component
 type FormData = {
   bbox: string;
   datetime: string;
-  text: string;
+  q: string;
   hint_lang: string;
 };
 
@@ -46,7 +46,7 @@ const SearchForm: React.FC<Props> = ({ onSubmit }) => {
     bbox: "",
     startDatetime: null,
     endDatetime: null,
-    text: "",
+    q: "",
     hint_lang: "python",
   });
 
@@ -91,7 +91,7 @@ const SearchForm: React.FC<Props> = ({ onSubmit }) => {
     const submitData = {
       bbox: formData.bbox,
       datetime,
-      text: formData.text,
+      q: formData.q,
       hint_lang: formData.hint_lang,
     };
     onSubmit(submitData);
@@ -157,7 +157,7 @@ const SearchForm: React.FC<Props> = ({ onSubmit }) => {
           <FormLabel>Text Search</FormLabel>
           <Input
             name="text"
-            value={formData.text}
+            value={formData.q}
             onChange={handleChange}
             placeholder="Enter text"
           />
